@@ -301,3 +301,133 @@ input:focus {
 .hidden {
   display: none !important;
 }
+
+/* Custom timer input */
+.custom-timer {
+  margin: 14px 0 12px;
+}
+
+.custom-timer label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.custom-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-timer-row input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+}
+
+.custom-timer-row input:focus {
+  border-color: var(--danger);
+}
+
+.custom-timer-row .unit {
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* SOS confirmation overlay */
+.sos-confirm {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.sos-confirm-box {
+  background: white;
+  border-radius: 16px;
+  padding: 24px 20px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.sos-confirm-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--danger);
+  margin-bottom: 8px;
+}
+
+.sos-confirm-text {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.sos-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sos-confirm-actions .secondary-btn,
+.sos-confirm-actions .danger-btn {
+  flex: 1;
+  padding: 14px 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.danger-btn {
+  background: var(--danger);
+  color: white;
+}
+
+.danger-btn:active {
+  background: var(--danger-dark);
+}
+
+/* SOS flash animation */
+.sos-btn.sos-flash {
+  animation: sosPulse 0.6s ease;
+}
+
+@keyframes sosPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7); }
+  70%  { box-shadow: 0 0 0 24px rgba(198, 40, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+}
+
+/* Urgent countdown */
+.countdown.urgent {
+  color: #b71c1c;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+/* Status flash */
+.status.flash-error {
+  animation: statusFlash 0.5s ease;
+}
+
+@keyframes statusFlash {
+  0%, 100% { background: transparent; }
+  50%      { background: #ffcdd2; border-radius: 6px; }
+}
