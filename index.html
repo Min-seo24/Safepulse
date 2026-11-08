@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#c62828" />
+  <meta name="description" content="SafePulse - Quick SOS and location sharing for personal safety" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>SafePulse – SOS</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="icons/icon-192.png" />
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <h1>SafePulse</h1>
+      <p class="tagline">Quick SOS • Check-in Timer • Location Share</p>
+    </header>
+
+    <!-- Status Message -->
+    <div id="status" class="status" aria-live="polite"></div>
+
+    <!-- Main SOS Button -->
+    <section class="sos-section">
+      <button id="sosBtn" class="sos-btn" aria-label="Send Emergency SOS">
+        SOS
+      </button>
+      <p class="sos-hint">Tap to send emergency alert with your location</p>
+    </section>
+
+    <!-- Check-in / Travelling Timer (NEW) -->
+    <section class="timer-section" id="timerSection">
+      <h2>I’m Travelling / Check-in</h2>
+      <p class="hint">Set a timer. If you don’t press “I’m Safe” before it ends, SafePulse will prepare an emergency alert automatically.</p>
+
+      <div id="timerIdle" class="timer-idle">
+        <div class="timer-options">
+          <button class="timer-opt" data-minutes="15">15 min</button>
+          <button class="timer-opt" data-minutes="30">30 min</button>
+          <button class="timer-opt" data-minutes="60">1 hour</button>
+          <button class="timer-opt" data-minutes="120">2 hours</button>
+        </div>
+        <button id="startTimerBtn" class="secondary-btn" disabled>Start Check-in Timer</button>
+      </div>
+
+      <div id="timerActive" class="timer-active hidden">
+        <div class="countdown" id="countdownDisplay">00:00</div>
+        <p class="timer-status" id="timerStatusText">Time remaining</p>
+        <button id="imSafeBtn" class="safe-btn">I’m Safe – Cancel Timer</button>
+      </div>
+    </section>
+
+    <!-- Location Display -->
+    <section class="location-box">
+      <h2>Your Location</h2>
+      <p id="locationText">Waiting for location permission...</p>
+      <button id="refreshLocation" class="secondary-btn">Refresh Location</button>
+    </section>
+
+    <!-- Emergency Contacts -->
+    <section class="contacts-section">
+      <h2>Emergency Contacts</h2>
+      <p class="hint">Add up to 5 people who should receive your SOS</p>
+
+      <form id="contactForm" class="contact-form">
+        <input type="text" id="contactName" placeholder="Name" required maxlength="40" />
+        <input type="tel" id="contactPhone" placeholder="Phone (e.g. 0803...)" required maxlength="15" />
+        <button type="submit" class="secondary-btn">Add Contact</button>
+      </form>
+
+      <ul id="contactsList" class="contacts-list"></ul>
+    </section>
+
+    <!-- Travel / Timed Share -->
+    <section class="share-section">
+      <h2>Share My Location</h2>
+      <p class="hint">Create a temporary link to share with trusted people</p>
+      <button id="shareLocationBtn" class="secondary-btn">Share Current Location</button>
+    </section>
+
+    <!-- Footer Notice -->
+    <footer class="footer">
+      <p>
+        <strong>Important:</strong> SafePulse does not replace calling the police (112) or emergency services.
+        Use it to quickly notify trusted contacts.
+      </p>
+      <p class="small">Your location is only accessed when you press SOS, start a timer, or Share. Contacts are stored only on this device.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

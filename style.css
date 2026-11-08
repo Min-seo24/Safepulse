@@ -1,0 +1,303 @@
+/* SafePulse – Mobile-first styles */
+
+:root {
+  --danger: #c62828;
+  --danger-dark: #8e0000;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #212121;
+  --muted: #616161;
+  --border: #e0e0e0;
+  --success: #2e7d32;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  padding-bottom: 40px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 20px 0 12px;
+}
+
+.header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--danger);
+  letter-spacing: -0.5px;
+}
+
+.tagline {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+/* Status */
+.status {
+  min-height: 28px;
+  text-align: center;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.status.success {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.status.error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* SOS Button */
+.sos-section {
+  text-align: center;
+  margin: 24px 0 32px;
+}
+
+.sos-btn {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: none;
+  background: var(--danger);
+  color: white;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(198, 40, 40, 0.45);
+  transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.sos-btn:active,
+.sos-btn.pressed {
+  transform: scale(0.94);
+  background: var(--danger-dark);
+  box-shadow: 0 4px 12px rgba(198, 40, 40, 0.5);
+}
+
+.sos-hint {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Cards / Sections */
+.location-box,
+.contacts-section,
+.share-section,
+.timer-section {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid var(--border);
+}
+
+/* Timer Section */
+.timer-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.timer-opt {
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.timer-opt.selected {
+  border-color: var(--danger);
+  background: #ffebee;
+  color: var(--danger);
+}
+
+.timer-active {
+  text-align: center;
+}
+
+.countdown {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--danger);
+  letter-spacing: 2px;
+  margin: 10px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-status {
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.safe-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.safe-btn:active {
+  transform: scale(0.98);
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+#locationText {
+  font-size: 0.95rem;
+  word-break: break-all;
+  margin-bottom: 12px;
+  min-height: 40px;
+}
+
+/* Forms & Buttons */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+input[type="text"],
+input[type="tel"] {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus {
+  border-color: var(--danger);
+}
+
+.secondary-btn {
+  padding: 12px 18px;
+  background: #f5f5f5;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.secondary-btn:active {
+  background: #eeeeee;
+}
+
+/* Contacts List */
+.contacts-list {
+  list-style: none;
+}
+
+.contacts-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.contacts-list li:last-child {
+  border-bottom: none;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-name {
+  font-weight: 600;
+}
+
+.contact-phone {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+/* Footer */
+.footer {
+  margin-top: 28px;
+  padding: 16px;
+  background: #fff3e0;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  color: #e65100;
+  line-height: 1.45;
+}
+
+.footer .small {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Utility */
+.hidden {
+  display: none !important;
+}
