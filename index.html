@@ -31,7 +31,19 @@
       <p class="sos-hint">Tap to send emergency alert with your location</p>
     </section>
 
-    <!-- Check-in / Travelling Timer (NEW) -->
+    <!-- Confirmation overlay for SOS -->
+    <div id="sosConfirm" class="sos-confirm hidden">
+      <div class="sos-confirm-box">
+        <p class="sos-confirm-title">Send Emergency SOS?</p>
+        <p class="sos-confirm-text">This will open WhatsApp / share sheet with your location for all emergency contacts.</p>
+        <div class="sos-confirm-actions">
+          <button id="sosConfirmCancel" class="secondary-btn">Cancel</button>
+          <button id="sosConfirmYes" class="danger-btn">Yes, Send SOS</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Check-in / Travelling Timer -->
     <section class="timer-section" id="timerSection">
       <h2>I’m Travelling / Check-in</h2>
       <p class="hint">Set a timer. If you don’t press “I’m Safe” before it ends, SafePulse will prepare an emergency alert automatically.</p>
@@ -43,6 +55,15 @@
           <button class="timer-opt" data-minutes="60">1 hour</button>
           <button class="timer-opt" data-minutes="120">2 hours</button>
         </div>
+
+        <div class="custom-timer">
+          <label for="customMinutes">Or enter custom minutes:</label>
+          <div class="custom-timer-row">
+            <input type="number" id="customMinutes" min="1" max="720" placeholder="e.g. 45" inputmode="numeric" />
+            <span class="unit">min</span>
+          </div>
+        </div>
+
         <button id="startTimerBtn" class="secondary-btn" disabled>Start Check-in Timer</button>
       </div>
 
