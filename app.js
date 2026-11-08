@@ -1,6 +1,8 @@
 /**
  * SafePulse – Main Application Logic
- * Simple, privacy-focused SOS + location sharing + check-in timer PWA
+ * SOS + location sharing + check-in timer PWA
+ * Improvements: multi-contact SOS, continuous location, vibration,
+ * custom timer, confirmation dialog
  */
 
 (function () {
@@ -12,6 +14,8 @@
   let selectedMinutes = null;
   let timerInterval = null;
   let timerEndTime = null;
+  let watchId = null;           // geolocation watchPosition id
+  let lastWarned = false;       // for < 2 min warning vibration
 
   // ---------- DOM Elements ----------
   const sosBtn           = document.getElementById("sosBtn");
@@ -32,6 +36,12 @@
   const timerStatusText  = document.getElementById("timerStatusText");
   const imSafeBtn        = document.getElementById("imSafeBtn");
   const timerOptions     = document.querySelectorAll(".timer-opt");
+  const customMinutesInput = document.getElementById("customMinutes");
+
+  // SOS confirmation
+  const sosConfirm       = document.getElementById("sosConfirm");
+  const sosConfirmYes    = document.getElementById("sosConfirmYes");
+  const sosConfirmCancel = document.getElementById("sosConfirmCancel");
 
   // ---------- Helpers ----------
   function setStatus(message, type = "") {
@@ -44,32 +54,25 @@
   }
 
   function formatPhone(phone) {
-    // Keep digits and leading +
     return phone.replace(/[^\d+]/g, "");
   }
 
   /**
    * Convert Nigerian numbers to international format for WhatsApp
    * 0803... → 234803...
-   * +234803... stays
-   * 234803... stays
    */
   function toWhatsAppNumber(phone) {
     let cleaned = formatPhone(phone).replace(/\D/g, "");
 
-    // Already starts with 234
     if (cleaned.startsWith("234") && cleaned.length >= 13) {
       return cleaned;
     }
-    // Local format starting with 0
     if (cleaned.startsWith("0") && cleaned.length === 11) {
       return "234" + cleaned.slice(1);
     }
-    // Sometimes people write 803... without 0
     if (cleaned.length === 10 && /^[789]/.test(cleaned)) {
       return "234" + cleaned;
     }
-    // Fallback – return as is
     return cleaned;
   }
 
@@ -95,7 +98,47 @@
     return msg;
   }
 
+  /** Vibrate patterns (works on most Android phones) */
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (e) {}
+    }
+  }
+
+  function flashStatus(type) {
+    statusEl.classList.add("flash-" + type);
+    setTimeout(() => statusEl.classList.remove("flash-" + type), 600);
+  }
+
   // ---------- Location ----------
+  function updateLocationUI(pos) {
+    currentPosition = {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy,
+      timestamp: pos.timestamp
+    };
+
+    // Persist last known good location
+    try {
+      localStorage.setItem("safepulse_last_pos", JSON.stringify(currentPosition));
+    } catch (e) {}
+
+    const accuracyText = currentPosition.accuracy
+      ? ` (±${Math.round(currentPosition.accuracy)} m)`
+      : "";
+
+    locationText.innerHTML = `
+      <strong>${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)}</strong>
+      ${accuracyText}<br>
+      <a href="${createMapsLink(currentPosition.lat, currentPosition.lng)}" target="_blank" rel="noopener">
+        Open in Google Maps
+      </a>
+    `;
+  }
+
   function getLocation(force = false) {
     if (!navigator.geolocation) {
       setStatus("Geolocation is not supported on this device.", "error");
@@ -113,24 +156,7 @@
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        currentPosition = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          timestamp: pos.timestamp
-        };
-
-        const accuracyText = currentPosition.accuracy
-          ? ` (±${Math.round(currentPosition.accuracy)} m)`
-          : "";
-
-        locationText.innerHTML = `
-          <strong>${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)}</strong>
-          ${accuracyText}<br>
-          <a href="${createMapsLink(currentPosition.lat, currentPosition.lng)}" target="_blank" rel="noopener">
-            Open in Google Maps
-          </a>
-        `;
+        updateLocationUI(pos);
         setStatus("Location ready", "success");
       },
       (err) => {
@@ -142,10 +168,54 @@
         else msg += err.message;
 
         setStatus(msg, "error");
-        locationText.textContent = "Location unavailable – check permissions";
+
+        // Fallback to last known position
+        try {
+          const raw = localStorage.getItem("safepulse_last_pos");
+          if (raw) {
+            currentPosition = JSON.parse(raw);
+            locationText.innerHTML = `
+              <strong>${currentPosition.lat.toFixed(5)}, ${currentPosition.lng.toFixed(5)}</strong>
+              (last known)<br>
+              <a href="${createMapsLink(currentPosition.lat, currentPosition.lng)}" target="_blank" rel="noopener">
+                Open in Google Maps
+              </a>
+            `;
+          } else {
+            locationText.textContent = "Location unavailable – check permissions";
+          }
+        } catch (e) {
+          locationText.textContent = "Location unavailable – check permissions";
+        }
       },
       options
     );
+  }
+
+  /** Continuous tracking while timer is active */
+  function startWatchingLocation() {
+    if (!navigator.geolocation || watchId !== null) return;
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        updateLocationUI(pos);
+      },
+      (err) => {
+        console.warn("watchPosition error:", err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 20000
+      }
+    );
+  }
+
+  function stopWatchingLocation() {
+    if (watchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
   }
 
   // ---------- Contacts (localStorage) ----------
@@ -201,7 +271,21 @@
   }
 
   // ---------- SOS Action ----------
-  async function triggerSOS(reason = "") {
+  function showSosConfirm() {
+    sosConfirm.classList.remove("hidden");
+  }
+
+  function hideSosConfirm() {
+    sosConfirm.classList.add("hidden");
+  }
+
+  async function triggerSOS(reason = "", skipConfirm = false) {
+    // Manual SOS requires confirmation (timer expiry skips it)
+    if (!skipConfirm && !reason) {
+      showSosConfirm();
+      return;
+    }
+
     if (!currentPosition) {
       setStatus("Getting location first…", "error");
       getLocation(true);
@@ -216,9 +300,13 @@
     const message = createSosMessage(currentPosition.lat, currentPosition.lng, reason);
     const mapsLink = createMapsLink(currentPosition.lat, currentPosition.lng);
 
-    sosBtn.classList.add("pressed");
-    setStatus("Preparing emergency message…");
+    // Strong feedback
+    vibrate([200, 100, 200, 100, 400]);
+    sosBtn.classList.add("pressed", "sos-flash");
+    setStatus("Preparing emergency message…", "error");
+    flashStatus("error");
 
+    // Prefer native share (user can pick multiple contacts)
     if (navigator.share) {
       try {
         await navigator.share({
@@ -228,32 +316,56 @@
         });
         setStatus("Share sheet opened. Send to your contacts!", "success");
       } catch (err) {
-        fallbackShare(message);
+        // User cancelled or share failed → fall back to multi WhatsApp
+        multiContactShare(message);
       }
     } else {
-      fallbackShare(message);
+      multiContactShare(message);
     }
 
-    setTimeout(() => sosBtn.classList.remove("pressed"), 300);
+    setTimeout(() => {
+      sosBtn.classList.remove("pressed", "sos-flash");
+    }, 800);
   }
 
-  function fallbackShare(message) {
+  /**
+   * Open WhatsApp for EVERY contact (one after another with small delay)
+   * + copy the message so user can paste if needed
+   */
+  function multiContactShare(message) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(message).then(() => {
-        setStatus("Message copied! Opening WhatsApp…", "success");
+        setStatus("Message copied! Opening WhatsApp for your contacts…", "success");
       }).catch(() => {});
     }
 
-    // Open WhatsApp for the first contact with proper Nigerian number format
-    const first = contacts[0];
-    const waNumber = toWhatsAppNumber(first.phone);
-    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    // Open first contact immediately
+    openWhatsAppForContact(contacts[0], message);
 
-    window.open(waUrl, "_blank");
+    // Open remaining contacts with a short delay so multiple tabs/windows open
+    if (contacts.length > 1) {
+      contacts.slice(1).forEach((contact, index) => {
+        setTimeout(() => {
+          openWhatsAppForContact(contact, message);
+        }, (index + 1) * 700);
+      });
+    }
 
+    // Final alert so user knows what happened
     setTimeout(() => {
-      alert("Emergency message ready:\n\n" + message + "\n\nIt has been copied (if supported). Send it via WhatsApp or SMS to your contacts.");
-    }, 400);
+      const names = contacts.map(c => c.name).join(", ");
+      alert(
+        "Emergency message ready and copied.\n\n" +
+        "WhatsApp opened for: " + names + "\n\n" +
+        "Send the message to each contact. You can also paste it into SMS."
+      );
+    }, contacts.length * 700 + 300);
+  }
+
+  function openWhatsAppForContact(contact, message) {
+    const waNumber = toWhatsAppNumber(contact.phone);
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, "_blank");
   }
 
   // ---------- Check-in Timer ----------
@@ -267,11 +379,15 @@
       clearInterval(timerInterval);
       timerInterval = null;
       timerEndTime = null;
+      lastWarned = false;
+      stopWatchingLocation();
 
-      // Timer expired → automatic SOS
+      // Strong vibration + visual
+      vibrate([300, 150, 300, 150, 300, 150, 600]);
       countdownDisplay.textContent = "00:00";
       timerStatusText.textContent = "Timer expired!";
       setStatus("Check-in timer expired – sending emergency alert", "error");
+      flashStatus("error");
 
       // Switch UI back
       timerActive.classList.add("hidden");
@@ -279,9 +395,10 @@
       startTimerBtn.disabled = true;
       selectedMinutes = null;
       timerOptions.forEach(btn => btn.classList.remove("selected"));
+      if (customMinutesInput) customMinutesInput.value = "";
 
-      // Trigger SOS with reason
-      triggerSOS("Check-in timer expired – I may need help");
+      // Auto SOS (skip confirmation)
+      triggerSOS("Check-in timer expired – I may need help", true);
       return;
     }
 
@@ -290,18 +407,31 @@
     const secs = totalSeconds % 60;
     countdownDisplay.textContent =
       String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+
+    // Warning when under 2 minutes
+    if (remaining <= 120000 && !lastWarned) {
+      lastWarned = true;
+      vibrate([150, 80, 150]);
+      timerStatusText.textContent = "Less than 2 minutes left!";
+      countdownDisplay.classList.add("urgent");
+    }
   }
 
   function startTimer(minutes) {
-    if (!minutes) return;
+    if (!minutes || minutes < 1) return;
 
     // Make sure we have location
     if (!currentPosition) {
       getLocation(true);
     }
 
+    // Start continuous location updates
+    startWatchingLocation();
+
     timerEndTime = Date.now() + minutes * 60 * 1000;
     localStorage.setItem("safepulse_timer_end", timerEndTime.toString());
+    lastWarned = false;
+    countdownDisplay.classList.remove("urgent");
 
     timerIdle.classList.add("hidden");
     timerActive.classList.remove("hidden");
@@ -309,6 +439,7 @@
     updateCountdown();
     timerInterval = setInterval(updateCountdown, 1000);
 
+    vibrate([80, 40, 80]);
     setStatus(`Check-in timer started (${minutes} min). Press “I’m Safe” when you arrive.`, "success");
   }
 
@@ -318,14 +449,19 @@
       timerInterval = null;
     }
     timerEndTime = null;
+    lastWarned = false;
     localStorage.removeItem("safepulse_timer_end");
+    stopWatchingLocation();
+    countdownDisplay.classList.remove("urgent");
 
     timerActive.classList.add("hidden");
     timerIdle.classList.remove("hidden");
     startTimerBtn.disabled = true;
     selectedMinutes = null;
     timerOptions.forEach(btn => btn.classList.remove("selected"));
+    if (customMinutesInput) customMinutesInput.value = "";
 
+    vibrate([50, 30, 50]);
     setStatus("Timer cancelled. You are marked safe.", "success");
   }
 
@@ -338,6 +474,7 @@
         timerEndTime = end;
         timerIdle.classList.add("hidden");
         timerActive.classList.remove("hidden");
+        startWatchingLocation();
         updateCountdown();
         timerInterval = setInterval(updateCountdown, 1000);
         setStatus("Check-in timer still running", "success");
@@ -380,8 +517,28 @@
     }
   }
 
+  // ---------- Enable/disable Start button ----------
+  function updateStartButtonState() {
+    const customVal = customMinutesInput ? parseInt(customMinutesInput.value, 10) : NaN;
+    const hasPreset = selectedMinutes !== null;
+    const hasCustom = !isNaN(customVal) && customVal >= 1 && customVal <= 720;
+    startTimerBtn.disabled = !(hasPreset || hasCustom);
+  }
+
   // ---------- Event Listeners ----------
   sosBtn.addEventListener("click", () => triggerSOS());
+
+  sosConfirmYes.addEventListener("click", () => {
+    hideSosConfirm();
+    triggerSOS("", true); // skip confirmation this time
+  });
+
+  sosConfirmCancel.addEventListener("click", hideSosConfirm);
+
+  // Close confirm if user taps outside the box
+  sosConfirm.addEventListener("click", (e) => {
+    if (e.target === sosConfirm) hideSosConfirm();
+  });
 
   // Timer option buttons
   timerOptions.forEach((btn) => {
@@ -389,12 +546,28 @@
       timerOptions.forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
       selectedMinutes = parseInt(btn.dataset.minutes, 10);
-      startTimerBtn.disabled = false;
+      if (customMinutesInput) customMinutesInput.value = "";
+      updateStartButtonState();
     });
   });
 
+  if (customMinutesInput) {
+    customMinutesInput.addEventListener("input", () => {
+      // Clear preset selection when typing custom
+      timerOptions.forEach(b => b.classList.remove("selected"));
+      selectedMinutes = null;
+      updateStartButtonState();
+    });
+  }
+
   startTimerBtn.addEventListener("click", () => {
-    if (selectedMinutes) startTimer(selectedMinutes);
+    let minutes = selectedMinutes;
+    if (!minutes && customMinutesInput) {
+      minutes = parseInt(customMinutesInput.value, 10);
+    }
+    if (minutes && minutes >= 1) {
+      startTimer(minutes);
+    }
   });
 
   imSafeBtn.addEventListener("click", cancelTimer);
