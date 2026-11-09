@@ -108,6 +108,32 @@ body {
   color: var(--muted);
 }
 
+.shake-hint {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.quick-actions {
+  margin-top: 16px;
+}
+
+.call-112-btn {
+  display: inline-block;
+  padding: 12px 22px;
+  background: #1565c0;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(21, 101, 192, 0.35);
+}
+
+.call-112-btn:active {
+  background: #0d47a1;
+  transform: scale(0.97);
+}
+
 /* Cards / Sections */
 .location-box,
 .contacts-section,
@@ -161,8 +187,46 @@ body {
 
 .timer-status {
   color: var(--muted);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   font-size: 0.95rem;
+}
+
+.timer-destination {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.device-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.status-chip {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #eeeeee;
+  color: var(--muted);
+}
+
+.status-chip.good {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-chip.ok {
+  background: #fff8e1;
+  color: #f9a825;
+}
+
+.status-chip.weak {
+  background: #ffebee;
+  color: #c62828;
 }
 
 .safe-btn {
