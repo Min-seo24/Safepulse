@@ -2,7 +2,7 @@
  * SafePulse – Main Application Logic
  * SOS + location sharing + check-in timer PWA
  * Improvements: multi-contact SOS, continuous location, vibration,
- * custom timer, confirmation dialog
+ * custom timer, confirmation dialog, safe-arrival message
  */
 
 (function () {
@@ -92,6 +92,24 @@
 
     let msg = `EMERGENCY! I need help right now.\n\n`;
     if (reason) msg += `Reason: ${reason}\n\n`;
+    msg += `My location: ${mapsLink}\n`;
+    msg += `Time: ${time}\n\n`;
+    msg += `Sent via SafePulse`;
+    return msg;
+  }
+
+  function createSafeArrivalMessage(lat, lng, destination = "") {
+    const mapsLink = createMapsLink(lat, lng);
+    const time = new Date().toLocaleString("en-NG", {
+      timeZone: "Africa/Lagos",
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "short"
+    });
+
+    let msg = `I’ve arrived safely ✅\n\n`;
+    if (destination) msg += `Destination: ${destination}\n`;
     msg += `My location: ${mapsLink}\n`;
     msg += `Time: ${time}\n\n`;
     msg += `Sent via SafePulse`;
@@ -332,17 +350,24 @@
    * Open WhatsApp for EVERY contact (one after another with small delay)
    * + copy the message so user can paste if needed
    */
-  function multiContactShare(message) {
+  function multiContactShare(message, isSafeArrival = false) {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(message).then(() => {
-        setStatus("Message copied! Opening WhatsApp for your contacts…", "success");
+        setStatus(
+          isSafeArrival
+            ? "Safe arrival message copied! Opening WhatsApp…"
+            : "Message copied! Opening WhatsApp for your contacts…",
+          "success"
+        );
       }).catch(() => {});
     }
+
+    if (contacts.length === 0) return;
 
     // Open first contact immediately
     openWhatsAppForContact(contacts[0], message);
 
-    // Open remaining contacts with a short delay so multiple tabs/windows open
+    // Open remaining contacts with a short delay
     if (contacts.length > 1) {
       contacts.slice(1).forEach((contact, index) => {
         setTimeout(() => {
@@ -351,13 +376,14 @@
       });
     }
 
-    // Final alert so user knows what happened
+    // Final alert
     setTimeout(() => {
       const names = contacts.map(c => c.name).join(", ");
+      const title = isSafeArrival ? "Safe arrival message" : "Emergency message";
       alert(
-        "Emergency message ready and copied.\n\n" +
+        title + " ready and copied.\n\n" +
         "WhatsApp opened for: " + names + "\n\n" +
-        "Send the message to each contact. You can also paste it into SMS."
+        "Please tap Send on each chat."
       );
     }, contacts.length * 700 + 300);
   }
@@ -366,6 +392,40 @@
     const waNumber = toWhatsAppNumber(contact.phone);
     const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, "_blank");
+  }
+
+  /** Send "I arrived safely" to all contacts */
+  async function sendSafeArrival(destination = "") {
+    if (!currentPosition) {
+      getLocation(true);
+    }
+
+    if (contacts.length === 0) {
+      setStatus("No emergency contacts saved.", "error");
+      return;
+    }
+
+    const lat = currentPosition ? currentPosition.lat : 0;
+    const lng = currentPosition ? currentPosition.lng : 0;
+    const message = createSafeArrivalMessage(lat, lng, destination);
+
+    vibrate([80, 40, 80, 40, 80]);
+    setStatus("Sending “arrived safely” message…", "success");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "I’ve arrived safely – SafePulse",
+          text: message,
+          url: currentPosition ? createMapsLink(lat, lng) : undefined
+        });
+        setStatus("Safe arrival shared!", "success");
+      } catch (err) {
+        multiContactShare(message, true);
+      }
+    } else {
+      multiContactShare(message, true);
+    }
   }
 
   // ---------- Check-in Timer ----------
@@ -440,7 +500,7 @@
     timerInterval = setInterval(updateCountdown, 1000);
 
     vibrate([80, 40, 80]);
-    setStatus(`Check-in timer started (${minutes} min). Press “I’m Safe” when you arrive.`, "success");
+    setStatus(`Check-in timer started (${minutes} min). Press “I’ve Arrived Safely” when you arrive.`, "success");
   }
 
   function cancelTimer() {
@@ -461,8 +521,8 @@
     timerOptions.forEach(btn => btn.classList.remove("selected"));
     if (customMinutesInput) customMinutesInput.value = "";
 
-    vibrate([50, 30, 50]);
-    setStatus("Timer cancelled. You are marked safe.", "success");
+    // Send "I arrived safely" message to contacts
+    sendSafeArrival();
   }
 
   // Restore timer if page was reloaded while timer was running
