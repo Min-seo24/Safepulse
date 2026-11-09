@@ -28,7 +28,12 @@
       <button id="sosBtn" class="sos-btn" aria-label="Send Emergency SOS">
         SOS
       </button>
-      <p class="sos-hint">Tap to send emergency alert with your location</p>
+      <p class="sos-hint">Tap to send emergency alert with your location<br>
+        <span class="shake-hint">or shake your phone hard</span>
+      </p>
+      <div class="quick-actions">
+        <a href="tel:112" class="call-112-btn" id="call112Btn">📞 Call 112</a>
+      </div>
     </section>
 
     <!-- Confirmation overlay for SOS -->
@@ -75,6 +80,7 @@
       <div id="timerActive" class="timer-active hidden">
         <div class="countdown" id="countdownDisplay">00:00</div>
         <p class="timer-status" id="timerStatusText">Time remaining</p>
+        <p class="timer-destination" id="timerDestination"></p>
         <button id="imSafeBtn" class="safe-btn">I’ve Arrived Safely</button>
       </div>
     </section>
@@ -82,6 +88,10 @@
     <!-- Location Display -->
     <section class="location-box">
       <h2>Your Location</h2>
+      <div class="device-status" id="deviceStatus">
+        <span id="batteryStatus" class="status-chip">Battery: —</span>
+        <span id="gpsStatus" class="status-chip">GPS: —</span>
+      </div>
       <p id="locationText">Waiting for location permission...</p>
       <button id="refreshLocation" class="secondary-btn">Refresh Location</button>
     </section>
