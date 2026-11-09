@@ -339,6 +339,31 @@ input:focus {
   font-weight: 600;
 }
 
+/* Destination field */
+.destination-field {
+  margin: 12px 0 14px;
+}
+
+.destination-field label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.destination-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+}
+
+.destination-field input:focus {
+  border-color: var(--danger);
+}
+
 /* SOS confirmation overlay */
 .sos-confirm {
   position: fixed;
